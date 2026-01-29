@@ -1,4 +1,4 @@
-# Конструктор Тренингов
+# Разработка серверной части сервиса для анализа рынка труда на основе больших данных
 
 
 ## Содержание 
@@ -12,7 +12,7 @@
 
 ## Start
 
-### Для настройки frontend
+
 
 
 ### Для настройки backend
@@ -30,11 +30,3 @@ uv run main.py
 ![Postgres](https://img.shields.io/badge/postgres-%23316192.svg?style=for-the-badge&logo=postgresql&logoColor=white)
 
 
-## Frontend
-
-vue
-vite
-vue-router
-quasar
-prettier
-eslint
