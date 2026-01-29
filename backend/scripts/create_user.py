@@ -16,9 +16,9 @@ async def create_test_user():
         )
         result = await repo.add_user(test_user)
         if result:
-            print("✅Тестовый пользователь создан")
+            print("Тестовый пользователь создан")
         else:
-            print("❌ Пользователь уже существует")
+            print("Пользователь уже существует")
 
 
 

@@ -27,21 +27,18 @@ class UserService:
             subject=f"Добро пожаловать в {configs.PROJECT_NAME}!",
             body=f"Вы успешно зарегистрированы в {configs.PROJECT_NAME}!",
         )
-        background_tasks.add_task(self.email_service.send_email, mail)
+        await background_tasks.add_task(self.email_service.send_email, mail)
         return await self.user_repo.add_user(user_data)
 
 
     async def authenticate(self, email: EmailStr, password: str):
-
         user = await self.user_repo.find_one_or_none(email=email)
         if not user or not verify_password(plain_password=password, hashed_password=user.password):
             return None
         return user
 
 
-
     async def login(self, credential: UserLogin) -> Optional[str]:
-        # Используем authenticate_user для проверки email и пароля
         user = await self.authenticate(
             email=credential.username, password=credential.password
         )
@@ -56,7 +53,6 @@ class UserService:
     async def get_current_user(self, token: str) -> UserResponse:
         payload = decode_access_token(token=token)
         email: str = payload.get("sub")
-
         user = await self.user_repo.find_one_or_none(email=email)
         if user is None:
             return None
