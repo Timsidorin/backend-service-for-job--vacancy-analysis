@@ -1,0 +1,35 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "watch": "vite watch",
+    "build": "vite build",
+    "eslint": "npx eslint",
+    "prettier": "prettier --write"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.17",
+    "@vue-dnd-kit/core": "^1.7.0",
+    "@vue-flow/core": "^1.47.0",
+    "@vue-flow/node-resizer": "^1.5.0",
+    "@vueuse/core": "^13.1.0",
+    "axios": "^1.8.1",
+    "pinia": "^3.0.1",
+    "quasar": "^2.18.0",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@quasar/vite-plugin": "^1.9.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "eslint": "^9.21.0",
+    "eslint-plugin-vue": "^9.32.0",
+    "globals": "^16.5.0",
+    "prettier": "3.5.2",
+    "sass-embedded": "^1.85.1",
+    "vite": "^6.2.0"
+  }
+}
