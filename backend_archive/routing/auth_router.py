@@ -15,7 +15,7 @@ from depends import get_user_service
 from services.user_service import UserService
 
 
-router = APIRouter(prefix="/auth",
+router = APIRouter(prefix="api/v1/auth",
                    tags=["Auth"],)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
@@ -65,7 +65,7 @@ async def login_user(
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@router.get("/me/", name="Получение данных текущего пользователя")
+@router.get("/me", name="Получение данных текущего пользователя")
 async def get_user(
     token: str = Depends(oauth2_scheme),
     user_service: UserService = Depends(get_user_service),
