@@ -33,8 +33,7 @@ async def get_user_service(
 ) -> UserService:
     """Получение сервиса пользователей"""
     repo = UserRepository(session)
-    email_service = EmailService()
-    return UserService(repo, email_service)
+    return UserService(repo)
 
 
 # === Аутентификация ===
