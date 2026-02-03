@@ -1,10 +1,10 @@
-FROM python:3.10:alpine
+FROM python:3.12:alpine
 
 
-WORKDIR /Auth_service
+WORKDIR /auth_service
 
 
-COPY ./requirements.txt /Auth_service/requirements.txt
+COPY ./requirements.txt /auth_service/requirements.txt
 
 
 RUN pip install --no-cache-dir --upgrade -r /auth_service/requirements.txt
@@ -12,4 +12,4 @@ RUN pip install --no-cache-dir --upgrade -r /auth_service/requirements.txt
 
 COPY ./app /Auth_service/app
 
-CMD ["python", "main.py"]
+CMD ["python", "main.py"   ]
