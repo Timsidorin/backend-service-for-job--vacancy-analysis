@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
 )
 from sqlalchemy.orm import DeclarativeBase, declared_attr
-from config import get_db_url
+from services.auth_service.core.config import get_db_url
 
 DATABASE_URL = get_db_url()
 
