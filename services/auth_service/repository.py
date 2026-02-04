@@ -3,9 +3,9 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from users_model import User
-from users_schema import UserRegister
-from security import get_password_hash, verify_password
+from services.auth_service.models.users_model import User
+from services.auth_service.schemas.users_schema import UserRegister
+from services.auth_service.utils.security import get_password_hash, verify_password
 
 
 class UserRepository:

@@ -1,7 +1,7 @@
 import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta, timezone
-from config import configs # Убрал get_auth_data, если он не нужен
+from services.auth_service.core.config import configs # Убрал get_auth_data, если он не нужен
 
 # --- НОВЫЙ КОД ХЕШИРОВАНИЯ (БЕЗ passlib) ---
 

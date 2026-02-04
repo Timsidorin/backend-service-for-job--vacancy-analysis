@@ -4,10 +4,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
 from uuid import UUID
 
-from users_schema import UserRegister, UserResponse, Token
+from services.auth_service.schemas.users_schema import UserRegister, UserResponse, Token
 from repository import UserRepository
-from security import create_access_token
-from database import get_async_session
+from services.auth_service.utils.security import create_access_token
+from services.auth_service.core.database import get_async_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from deps import get_current_user
 

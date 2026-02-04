@@ -6,7 +6,7 @@ import enum
 import sqlalchemy as sa
 from sqlalchemy import String, DateTime, Boolean, Enum
 from sqlalchemy.orm import Mapped, mapped_column
-from database import Base
+from services.auth_service.core.database import Base
 
 
 class UserRole(str, enum.Enum):
