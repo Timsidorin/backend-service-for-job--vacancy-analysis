@@ -1,11 +1,16 @@
-import uvicorn
-import httpx
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse, Response
-from starlette.background import BackgroundTask
-from config import configs
-from middleware import LoggingMiddleware
 import logging
+from contextlib import asynccontextmanager
+from typing import Dict
+
+import httpx
+import uvicorn
+from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, StreamingResponse
+from starlette.background import BackgroundTask
+
+from api_gateway.config import configs
+from api_gateway.middleware import LoggingMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,42 +18,42 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+client: httpx.AsyncClient
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    global client
+    client = httpx.AsyncClient(
+        timeout=configs.REQUEST_TIMEOUT,
+        limits=httpx.Limits(
+            max_keepalive_connections=configs.MAX_KEEPALIVE_CONNECTIONS,
+            max_connections=configs.MAX_CONNECTIONS,
+        ),
+    )
+    yield
+    await client.aclose()
+
+
 app = FastAPI(
     title=configs.PROJECT_NAME,
     docs_url="/docs",
     openapi_url="/openapi.json",
-    description="API Gateway для микросервисной архитектуры"
+    description="API Gateway для микросервисной архитектуры",
+    lifespan=lifespan,
 )
 
 app.add_middleware(LoggingMiddleware)
-
-
-client = httpx.AsyncClient(
-    timeout=configs.REQUEST_TIMEOUT,
-    limits=httpx.Limits(
-        max_keepalive_connections=configs.MAX_KEEPALIVE_CONNECTIONS,
-        max_connections=configs.MAX_CONNECTIONS
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Закрываем httpx клиент при остановке приложения"""
-    await client.aclose()
-
-
 def get_target_service(path: str) -> str:
-    """
-    Определяет целевой сервис на основе пути запроса
-
-    Args:
-        path: Путь запроса
-
-    Returns:
-        URL целевого сервиса
-
-    """
     for route_prefix, service_url in configs.SERVICE_ROUTES.items():
         if path.startswith(route_prefix):
             return service_url
@@ -63,7 +68,6 @@ async def proxy_request(request: Request, path: str):
     try:
         target_service = get_target_service(path)
 
-        # Надежное создание URL
         base_url = httpx.URL(target_service)
         target_url = base_url.copy_with(
             path=path,
@@ -80,7 +84,7 @@ async def proxy_request(request: Request, path: str):
             method=request.method,
             url=target_url,
             headers=headers,
-            content=await request.body(),  # Важно: await получения тела
+            content=await request.body(),
         )
 
         rp_resp = await client.send(rp_req, stream=True)
@@ -92,27 +96,24 @@ async def proxy_request(request: Request, path: str):
             background=BackgroundTask(rp_resp.aclose),
         )
     except Exception as e:
-        # ... обработка ошибок
         logger.error(f"Error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.api_route(
     "/api/{path:path}",
-    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"]
+    methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"],
+    summary="Проксирование запросов к микросервисам",
 )
 async def api_gateway(request: Request, path: str):
-    """
-    Главный обработчик API Gateway.
-    Проксирует все запросы к /api/* на соответствующие микросервисы.
-    """
+    """Проксирует все запросы /api/* на соответствующие микросервисы."""
     full_path = f"/api/{path}"
     return await proxy_request(request, full_path)
 
 
-@app.get("/health")
+@app.get("/health", summary="Проверка здоровья шлюза и сервисов")
 async def health_check():
-    """Проверка здоровья API Gateway"""
+    """Проверяет доступность API Gateway и всех зарегистрированных сервисов."""
     services_status = {}
     for route, service_url in configs.SERVICE_ROUTES.items():
         try:
@@ -135,9 +136,130 @@ async def health_check():
     }
 
 
-@app.get("/")
+@app.get("/admin", response_class=HTMLResponse, summary="Панель мониторинга сервисов")
+async def admin_dashboard():
+    """HTML-дашборд со статусом сервисов и ссылками на Swagger."""
+    rows: list[Dict[str, str]] = []
+    for prefix, base_url in configs.SERVICE_ROUTES.items():
+        # Имя сервиса по префиксу
+        name = {
+            "/api/v1/auth": "Auth Service",
+            "/api/v1/ml": "ML Service",
+            "/api/v1/analytics": "Analytics Service",
+        }.get(prefix, prefix)
+
+        # Проверяем health
+        try:
+            resp = await client.get(f"{base_url}/health", timeout=5.0)
+            status = "healthy" if resp.status_code == 200 else f"unhealthy ({resp.status_code})"
+        except Exception as e:
+            status = f"unreachable ({e})"
+
+        # Swagger и OpenAPI через gateway
+        swagger_url = f"{prefix}/docs"
+        openapi_url = f"{prefix}/openapi.json"
+
+        rows.append(
+            {
+                "name": name,
+                "prefix": prefix,
+                "base_url": base_url,
+                "status": status,
+                "swagger": swagger_url,
+                "openapi": openapi_url,
+            }
+        )
+
+    rows_html = "\n".join(
+        f"""
+        <tr>
+          <td>{r['name']}</td>
+          <td><code>{r['prefix']}</code></td>
+          <td>{r['status']}</td>
+          <td><a href="{r['swagger']}" target="_blank">Swagger</a></td>
+          <td><a href="{r['openapi']}" target="_blank">OpenAPI</a></td>
+        </tr>
+        """
+        for r in rows
+    )
+
+    html = f"""
+    <!doctype html>
+    <html lang="ru">
+    <head>
+      <meta charset="utf-8" />
+      <title>Service Dashboard</title>
+      <style>
+        body {{
+          font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          margin: 0;
+          padding: 2rem;
+          background: #0f172a;
+          color: #e5e7eb;
+        }}
+        h1 {{
+          margin-bottom: 1.5rem;
+        }}
+        table {{
+          width: 100%;
+          border-collapse: collapse;
+          background: #020617;
+          border-radius: 0.5rem;
+          overflow: hidden;
+        }}
+        th, td {{
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #1f2937;
+          text-align: left;
+        }}
+        th {{
+          background: #111827;
+          font-weight: 600;
+        }}
+        tr:hover td {{
+          background: #0b1120;
+        }}
+        a {{
+          color: #38bdf8;
+          text-decoration: none;
+        }}
+        a:hover {{
+          text-decoration: underline;
+        }}
+        code {{
+          background: #020617;
+          padding: 0.1rem 0.3rem;
+          border-radius: 0.25rem;
+          font-size: 0.85rem;
+        }}
+      </style>
+    </head>
+    <body>
+      <h1>Дашборд Сервисов</h1>
+      <p>Gateway: <strong>http://{configs.HOST}:{configs.PORT}</strong></p>
+      <table>
+        <thead>
+          <tr>
+            <th>Сервис</th>
+            <th>Префикс</th>
+            <th>Статус</th>
+            <th>Swagger</th>
+            <th>OpenAPI</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows_html}
+        </tbody>
+      </table>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html)
+
+
+@app.get("/", summary="Информация о шлюзе")
 async def root():
-    """Корневой путь API Gateway"""
+    """Корневой маршрут: версия и список зарегистрированных сервисов."""
     return {
         "message": "API Gateway",
         "version": "1.0.0",
@@ -146,9 +268,9 @@ async def root():
 
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app",
+        "api_gateway.main:app",
         host=configs.HOST,
         port=configs.PORT,
         reload=True,
-        log_level="info"
+        log_level="info",
     )

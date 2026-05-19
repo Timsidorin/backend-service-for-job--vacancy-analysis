@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID, uuid4
 import enum
 
 import sqlalchemy as sa
-from sqlalchemy import String, DateTime, Boolean, Enum
+from sqlalchemy import String, DateTime, Boolean, Enum, BigInteger
 from sqlalchemy.orm import Mapped, mapped_column
 from services.auth_service.core.database import Base
 
@@ -16,10 +16,8 @@ class UserRole(str, enum.Enum):
 
 
 class User(Base):
-    """
-    Таблица пользователя
-    """
     __tablename__ = "users"
+
     uuid: Mapped[UUID] = mapped_column(
         sa.UUID(as_uuid=True),
         primary_key=True,
@@ -40,11 +38,15 @@ class User(Base):
         server_default="user",
         nullable=False
     )
+    vk_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
-        default=datetime.now,
-        onupdate=datetime.now
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
     )
