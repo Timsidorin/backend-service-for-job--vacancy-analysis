@@ -24,3 +24,4 @@ class LoggingMiddleware(BaseHTTPMiddleware):
         )
         response.headers["X-Process-Time"] = str(process_time)
         return response
+

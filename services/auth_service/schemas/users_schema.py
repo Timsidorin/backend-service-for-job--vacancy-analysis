@@ -19,20 +19,19 @@ class UserRegister(BaseModel):
         description="Пароль (минимум 6 символов)"
     )
     full_name: Optional[str] = Field(None, max_length=100, description="Полное имя")
+    vk_id: Optional[int] = Field(None, description="ID пользователя ВКонтакте")
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
 class UserResponse(BaseModel):
-    """
-    Схема для ответа API (без пароля!)
-    """
     model_config = ConfigDict(from_attributes=True)
 
     uuid: UUID
     email: EmailStr
     full_name: Optional[str] = None
+    vk_id: Optional[int] = None
     role: UserRole
     is_active: bool
     created_at: datetime
@@ -42,9 +41,6 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 class TokenData(BaseModel):
-    """
-    Данные, которые мы достаем из JWT токена
-    """
     uuid: Optional[UUID] = None
     email: Optional[str] = None
     role: Optional[UserRole] = None

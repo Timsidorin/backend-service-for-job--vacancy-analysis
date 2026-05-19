@@ -1,25 +1,21 @@
 import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta, timezone
-from services.auth_service.core.config import configs # Убрал get_auth_data, если он не нужен
+from services.auth_service.core.config import configs
 
-# --- НОВЫЙ КОД ХЕШИРОВАНИЯ (БЕЗ passlib) ---
 
 def get_password_hash(password: str) -> str:
-    """Хеширование пароля с использованием bcrypt"""
     pwd_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(pwd_bytes, salt)
     return hashed.decode('utf-8')
 
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Проверка пароля"""
     pwd_bytes = plain_password.encode('utf-8')
     hashed_bytes = hashed_password.encode('utf-8')
-    # checkpw сама безопасно сравнивает хеши
     return bcrypt.checkpw(pwd_bytes, hashed_bytes)
 
-# --- JWT ОСТАЕТСЯ БЕЗ ИЗМЕНЕНИЙ ---
 
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()

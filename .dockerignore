@@ -1,0 +1,11 @@
+.venv
+.venv/
+venv/
+.git
+.uv
+.idea
+.env
+__pycache__/
+*.pyc
+experiments/
+build/

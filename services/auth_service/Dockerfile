@@ -1,15 +1,15 @@
-FROM python:3.12:alpine
+FROM python:3.12-slim
 
+WORKDIR /app
 
-WORKDIR /auth_service
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+COPY pyproject.toml uv.lock ./
+ENV UV_HTTP_TIMEOUT=120
+RUN uv sync --frozen --no-dev
 
-COPY ./requirements.txt /auth_service/requirements.txt
+COPY . .
 
+EXPOSE 8005
 
-RUN pip install --no-cache-dir --upgrade -r /auth_service/requirements.txt
-
-
-COPY ./app /Auth_service/app
-
-CMD ["python", "main.py"   ]
+CMD ["uv", "run", "python", "-m", "services.auth_service.main"]

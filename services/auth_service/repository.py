@@ -13,13 +13,13 @@ class UserRepository:
         self.session = session
 
     async def create_user(self, user_data: UserRegister) -> Optional[User]:
-        """Создание нового пользователя"""
         try:
             hashed = get_password_hash(user_data.password)
             new_user = User(
                 email=user_data.email,
                 hashed_password=hashed,
-                full_name=user_data.full_name
+                full_name=user_data.full_name,
+                vk_id=user_data.vk_id,
             )
 
             self.session.add(new_user)
@@ -34,20 +34,16 @@ class UserRepository:
             raise e
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
-        """Получение пользователя по Email (вместо username)"""
         query = select(User).where(User.email == email)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
     async def get_user_by_uuid(self, user_uuid: UUID) -> Optional[User]:
-        """Получение пользователя по UUID"""
         query = select(User).where(User.uuid == user_uuid)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
     async def authenticate_user(self, email: str, password: str) -> Optional[User]:
-        """Аутентификация пользователя"""
-        # 1. Ищем по email
         user = await self.get_user_by_email(email)
         if not user or not verify_password(password, user.hashed_password):
             return None
@@ -57,7 +53,6 @@ class UserRepository:
     async def update_user_password(
             self, user_uuid: UUID, new_password: str
     ) -> Optional[User]:
-        """Обновление пароля пользователя"""
         try:
             user = await self.get_user_by_uuid(user_uuid)
             if not user:
@@ -72,7 +67,6 @@ class UserRepository:
             raise e
 
     async def delete_user(self, user_uuid: UUID) -> bool:
-        """Удаление пользователя (Soft Delete предпочтительнее)"""
         try:
             user = await self.get_user_by_uuid(user_uuid)
             if not user:
@@ -99,6 +93,5 @@ class UserRepository:
             raise e
 
     async def user_exists(self, email: str) -> bool:
-        """Проверка существования по email"""
         user = await self.get_user_by_email(email)
         return user is not None

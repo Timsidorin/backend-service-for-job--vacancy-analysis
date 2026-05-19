@@ -1,4 +1,17 @@
-FROM ubuntu:latest
-LABEL authors="timsidorin"
+FROM python:3.12-slim
 
-ENTRYPOINT ["top", "-b"]
+WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+COPY pyproject.toml uv.lock ./
+ENV UV_HTTP_TIMEOUT=120
+RUN uv sync --frozen --no-dev
+
+COPY . .
+
+ENV PYTHONPATH=/app
+
+EXPOSE 8000
+
+CMD ["uv", "run", "python", "-m", "api_gateway.main"]

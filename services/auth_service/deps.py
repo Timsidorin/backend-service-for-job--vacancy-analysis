@@ -1,8 +1,7 @@
-# deps.py
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from repository import UserRepository
+from services.auth_service.repository import UserRepository
 from services.auth_service.core.database import get_async_session
 from sqlalchemy.ext.asyncio import AsyncSession
 from services.auth_service.core.config import configs
